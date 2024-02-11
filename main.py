@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 
 
 class ShoppingRow:
@@ -29,42 +29,24 @@ def get_product():
         dictionnary.append(row.to_dict())
     return jsonify(dictionnary)
 
-@app.route("/", methods=["GET", "PUT"])
-def hello_world():
-    if request.method == "GET":
-        return get_product()
+@app.route("/")
+def all_product():
+    return render_template("index.html", shopping_list=shopping_list)
+
+@app.route("/new", methods=["POST"])
+def new_product():
+    if "name" in request.form and "price" in request.form and "quantity" in request.form:
+        shopping_list.append(ShoppingRow(request.form['name'], int(request.form['price']), int(request.form["quantity"])))
+        return render_template("index.html", shopping_list=shopping_list)
     else:
-        if request.is_json == False:
-            return "Erreur dans le json", 422
-        else:
-            data = request.get_json()
-            if "name" in data and "price" in data and "quantity" in data:
-                shopping_list.append(ShoppingRow(data['name'], int(data['price']), int(data["quantity"])))
-                return get_product()
-            else:
-                return "Il manque des données dans le json", 400
+        return "Il manque des données dans le json", 400
 
 
-@app.route("/<int:identifier>", methods=["PATCH", "DELETE"])
+@app.route("/delete/<int:identifier>", methods=["GET"])
 def get_by_id(identifier : int):
-    if request.method == "DELETE":
-        if identifier < len(shopping_list) and identifier >= 0:
-            del shopping_list[identifier]
-            return get_product()
-    elif request.method == "PATCH":
-        if request.is_json == False:
-            return "Erreur dans le json", 422
-        if identifier >= len(shopping_list) or identifier < 0:
-            return "Existe pas", 404
-        data = request.get_json()
-        shopping_row : ShoppingRow = shopping_list[identifier]
-        if "name" in data:
-            shopping_row.name = data["name"]
-        if "price" in data:
-            shopping_row.price = data["price"]
-        if "quantity" in data:
-            shopping_row.quantity = data["quantity"]
-        return get_product()
+    if identifier < len(shopping_list) and identifier >= 0:
+        del shopping_list[identifier]
+        return render_template("index.html", shopping_list=shopping_list)
 
 
 
